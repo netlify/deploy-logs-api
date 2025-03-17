@@ -1,0 +1,9 @@
+{
+  "name": "netlify-logs",
+  "version": "1.0.0",
+  "description": "A simple tool to view Netlify logs",
+  "main": "index.html",
+  "scripts": {
+    "start": "netlify serve"
+  }
+}
