@@ -1,6 +1,10 @@
 async function getAccessControlToken(options) {
+  const queryParams = new URLSearchParams();
+  Object.entries(options).forEach(([key, value]) => {
+    queryParams.set(key, value);
+  });
   const tokenResp = await fetch(
-    `.netlify/functions/generate-token?deploy_id=${options.deployId}&site_id=${options.siteId}`,
+    `.netlify/functions/generate-token?${queryParams.toString()}`,
     {
       credentials: "include",
     }
@@ -19,6 +23,7 @@ class NetlifyLogsService {
   constructor(options = {}) {
     this.options = options;
     this.logs = [];
+    this.url = options.url;
     this.shouldReconnect = true;
   }
 
@@ -30,19 +35,13 @@ class NetlifyLogsService {
   }
 
   connect(options) {
-    const deployId = options.deployId || this.options.deployId;
-    const siteId = options.siteId || this.options.siteId;
-    this.ws = new WebSocket("wss://socketeer.services.netlify.com/build/logs");
+    this.ws = new WebSocket(this.url);
     this.ws.addEventListener("open", () => {
-      getAccessControlToken({
-        deployId,
-        siteId,
-      })
+      getAccessControlToken(options.accessControlTokenOptions)
         .then((accessToken) => {
           this.ws.send(
             JSON.stringify({
-              deploy_id: deployId,
-              site_id: siteId,
+              ...options.logsPayload,
               access_token: accessToken,
             })
           );
@@ -119,10 +118,11 @@ const logsService = new NetlifyLogsService({
 });
 
 // Initialize the logs service
-const netlifyLogs = new NetlifyLogsService({
+const netlifyDeployLogs = new NetlifyLogsService({
+  url: "wss://socketeer.services.netlify.com/build/logs",
   onLogsUpdated: (logs) => {
     // Update UI with new logs
-    const logContainer = document.querySelector("#logs");
+    const logContainer = document.querySelector("#deploy-logs");
     if (logContainer) {
       logContainer.innerHTML = logs
         .map(
@@ -146,8 +146,101 @@ const netlifyLogs = new NetlifyLogsService({
   reconnect: 3000,
 });
 
-document.getElementById("connect").addEventListener("click", () => {
+const netlifyFunctionLogs = new NetlifyLogsService({
+  url: "wss://socketeer.services.netlify.com/function/logs",
+  onLogsUpdated: (logs) => {
+    // Update UI with new logs
+    const logContainer = document.querySelector("#function-logs");
+    if (logContainer) {
+      logContainer.innerHTML = logs
+        .map(
+          (log) => `
+                    <div class="log-entry">
+                        <span class="timestamp">${new Date(
+                          log.timestamp
+                        ).toLocaleTimeString()}</span>
+                        <span class="message">${log.message}</span>
+                    </div>
+                `
+        )
+        .join("");
+    }
+  },
+  onForbidden: () => {
+    console.error("Access forbidden - please check your credentials");
+    // Optionally show error message to user
+    alert("Unable to access logs - permission denied");
+  },
+  reconnect: 3000,
+});
+
+const netlifyEdgeFunctionLogs = new NetlifyLogsService({
+  url: "wss://socketeer.services.netlify.com/edge-function/logs",
+  onLogsUpdated: (logs) => {
+    // Update UI with new logs
+    const logContainer = document.querySelector("#edge-function-logs");
+    if (logContainer) {
+      logContainer.innerHTML = logs
+        .map(
+          (log) => `
+                    <div class="log-entry">
+                        <span class="timestamp">${new Date(
+                          log.timestamp
+                        ).toLocaleTimeString()}</span>
+                        <span class="message">${log.message}</span>
+                    </div>
+                `
+        )
+        .join("");
+    }
+  },
+  onForbidden: () => {
+    console.error("Access forbidden - please check your credentials");
+    // Optionally show error message to user
+    alert("Unable to access logs - permission denied");
+  },
+});
+document.getElementById("connect-deploy-logs").addEventListener("click", () => {
   const deployId = document.getElementById("deployId").value;
   const siteId = document.getElementById("siteId").value;
-  netlifyLogs.connect({ deployId, siteId });
+  netlifyDeployLogs.connect({
+    accessControlTokenOptions: { deploy_id: deployId, site_id: siteId },
+    logsPayload: { deploy_id: deployId, site_id: siteId },
+  });
 });
+
+document
+  .getElementById("connect-function-logs")
+  .addEventListener("click", () => {
+    const functionId = document.getElementById("functionId").value;
+    const accountId = document.getElementById("accountId").value;
+    const siteId = document.getElementById("siteId").value;
+
+    netlifyFunctionLogs.connect({
+      accessControlTokenOptions: {
+        function_id: functionId,
+        account_id: accountId,
+        site_id: siteId,
+      },
+      logsPayload: {
+        function_id: functionId,
+        account_id: accountId,
+        site_id: siteId,
+      },
+    });
+  });
+
+document
+  .getElementById("connect-edge-function-logs")
+  .addEventListener("click", () => {
+    const deployId = document.getElementById("edgeDeployId").value;
+    const siteId = document.getElementById("siteId").value;
+    netlifyEdgeFunctionLogs.connect({
+      accessControlTokenOptions: { deploy_id: deployId, site_id: siteId },
+      logsPayload: {
+        deploy_id: deployId,
+        site_id: siteId,
+        since: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+      },
+    });
+  });

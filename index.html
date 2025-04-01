@@ -8,9 +8,32 @@
   </head>
   <body>
     <h1>Netlify Logs</h1>
-    <input type="text" id="deployId" placeholder="Deploy ID" />
+    <label for="siteId">Site ID</label>
     <input type="text" id="siteId" placeholder="Site ID" />
-    <button id="connect">Connect</button>
-    <div id="logs"></div>
+    <h2>Deploy Logs</h2>
+    <button id="connect-deploy-logs">Show Deploy Logs</button>
+    <div>
+      <label for="deployId">Deploy ID</label>
+      <input type="text" id="deployId" placeholder="Deploy ID" />
+    </div>
+    <section id="deploy-logs"></section>
+    <h2>Function Logs</h2>
+    <button id="connect-function-logs">Show Function Logs</button>
+    <div>
+      <label for="functionId">Function ID</label>
+      <input type="text" id="functionId" placeholder="Function ID" />
+    </div>
+    <div>
+      <label for="accountId">Account ID</label>
+      <input type="text" id="accountId" placeholder="Account ID" />
+    </div>
+    <section id="function-logs"></section>
+    <h2>Edge Function Logs</h2>
+    <button id="connect-edge-function-logs">Show Edge Function Logs</button>
+    <div>
+      <label for="edgeDeployId">Deploy ID</label>
+      <input type="text" id="edgeDeployId" placeholder="Deploy ID" />
+    </div>
+    <section id="edge-function-logs"></section>
   </body>
 </html>

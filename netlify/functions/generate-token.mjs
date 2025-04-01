@@ -1,10 +1,10 @@
 export default async (req, context) => {
   const url = new URL(req.url);
-  const siteId = url.searchParams.get("site_id");
-  const deployId = url.searchParams.get("deploy_id");
+  console.log("Generating token", url.searchParams.toString());
+
   try {
     const response = await fetch(
-      `https://app.netlify.com/access-control/generate-access-control-token?site_id=${siteId}&deploy_id=${deployId}`,
+      `https://app.netlify.com/access-control/generate-access-control-token?${url.searchParams.toString()}`,
       {
         method: "GET",
         headers: {
@@ -14,6 +14,7 @@ export default async (req, context) => {
       }
     );
     const data = await response.json();
+    console.log("Token generated", data);
     return new Response(JSON.stringify(data));
   } catch (error) {
     console.error(error);
