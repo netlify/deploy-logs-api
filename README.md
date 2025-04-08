@@ -27,7 +27,7 @@ ws.addEventListener("open", () => {
 
 ### Deploy logs
 
-path: `/deploy/logs`
+path: `/build/logs`
 
 payload:
 
